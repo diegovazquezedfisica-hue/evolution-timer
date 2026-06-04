@@ -1257,17 +1257,53 @@ function startTimer() {
   }
 }
 
+// ===== AUDIO =====
+let audioCtx = null;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function beep(freq, duration, volume, type) {
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    gain.gain.setValueAtTime(volume || 0.4, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
+  } catch(e) {}
+}
+
+function beepCountdown() { beep(660, 0.12, 0.4, 'sine'); }   // pip corto
+function beepGo()        { beep(880, 0.35, 0.6, 'sine'); }   // pip largo al arrancar
+function beepPhase()     { beep(440, 0.15, 0.35, 'square'); } // cambio de fase
+function beepFinish() {                                        // triple al terminar
+  beep(880, 0.15, 0.5, 'sine');
+  setTimeout(() => beep(880, 0.15, 0.5, 'sine'), 200);
+  setTimeout(() => beep(1100, 0.4, 0.6, 'sine'), 400);
+}
+function beepWarning() { beep(550, 0.08, 0.3, 'sine'); }      // últimos 5 seg
+
 function runCountdown(cb) {
   const overlay = document.getElementById('countdownOverlay');
   const num = document.getElementById('countdownNumber');
   overlay.classList.add('show');
   let count = 3;
   num.textContent = count;
+  beepCountdown();
 
   const interval = setInterval(() => {
     count--;
     if (count === 0) {
       num.textContent = '¡YA!';
+      beepGo();
       setTimeout(() => {
         overlay.classList.remove('show');
         clearInterval(interval);
@@ -1275,6 +1311,7 @@ function runCountdown(cb) {
       }, 600);
     } else {
       num.textContent = count;
+      beepCountdown();
     }
   }, 800);
 }
@@ -1381,6 +1418,7 @@ function resetTimer() {
 function onPhaseEnd() {
   clearInterval(timerInterval);
   vibrate([200, 100, 200]);
+  beepPhase();
 
   if (currentMode === 'hiit') {
     if (currentPhase === 'work') {
@@ -1435,6 +1473,7 @@ function finishSession() {
   document.getElementById('btnStart').textContent = 'INICIAR';
   document.getElementById('btnSave').style.display = 'block';
   vibrate([300, 100, 300, 100, 300]);
+  beepFinish();
   showToast('SESIÓN COMPLETADA');
 }
 
@@ -1458,7 +1497,9 @@ function formatTime(s) {
 
 function updateDisplay(left, total) {
   document.getElementById('timerDisplay').textContent = formatTime(left);
-  document.getElementById('timerDisplay').classList.toggle('warning', left <= 5 && left > 0);
+  const isWarning = left <= 5 && left > 0;
+  document.getElementById('timerDisplay').classList.toggle('warning', isWarning);
+  if (isWarning) beepWarning();
   setRingProgress(total > 0 ? left / total : 0);
 }
 
