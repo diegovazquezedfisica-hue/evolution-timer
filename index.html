@@ -1281,15 +1281,21 @@ function beep(freq, duration, volume, type) {
   } catch(e) {}
 }
 
-function beepCountdown() { beep(660, 0.12, 0.4, 'sine'); }   // pip corto
-function beepGo()        { beep(880, 0.35, 0.6, 'sine'); }   // pip largo al arrancar
-function beepPhase()     { beep(440, 0.15, 0.35, 'square'); } // cambio de fase
+function beepCountdown() {                                     // 3·2·1 — pip agudo tipo silbato
+  beep(1200, 0.08, 0.5, 'square');
+}
+function beepGo() {                                            // ¡YA! — sweep ascendente
+  beep(800, 0.12, 0.5, 'sine');
+  setTimeout(() => beep(1000, 0.12, 0.55, 'sine'), 100);
+  setTimeout(() => beep(1200, 0.25, 0.6, 'sine'), 200);
+}
+function beepPhase()     { beep(440, 0.15, 0.35, 'square'); } // cambio de fase — grave
 function beepFinish() {                                        // pip pip + largo final
   beep(880, 0.12, 0.5, 'sine');
   setTimeout(() => beep(880, 0.12, 0.5, 'sine'), 180);
   setTimeout(() => beep(1100, 1.8, 0.7, 'sine'), 360);
 }
-function beepWarning() { beep(550, 0.08, 0.3, 'sine'); }      // últimos 5 seg
+function beepWarning() { beep(480, 0.07, 0.25, 'sine'); }     // últimos 5 seg — suave y grave
 
 function runCountdown(cb) {
   const overlay = document.getElementById('countdownOverlay');
