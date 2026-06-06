@@ -252,15 +252,6 @@
         <div class="coach-status-val" id="coachStatusVal">—</div>
         <div class="coach-status-detail" id="coachStatusDetail">Verificando...</div>
       </div>
-      <div class="coach-field">
-        <label>URL LICENCIA DRL</label>
-        <input type="url" id="coachLicenseUrl" placeholder="https://script.google.com/..." style="font-size:0.65rem;letter-spacing:0;">
-      </div>
-      <div class="coach-field">
-        <label>ID DEL GYM</label>
-        <input type="text" id="coachGymId" placeholder="EVOLUTION-001">
-      </div>
-      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:10px" onclick="coachSaveConfig()">GUARDAR CONFIG</button>
       <button class="btn btn-secondary" style="width:100%;justify-content:center;margin-bottom:10px" onclick="coachCheckLicense()">VERIFICAR LICENCIA</button>
       <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:16px" onclick="coachClose()">CERRAR</button>
 
@@ -502,7 +493,6 @@ function coachVerifyPin() {
   if (pin === stored) {
     document.getElementById('coachPinSection').style.display = 'none';
     document.getElementById('coachDashboard').style.display = 'block';
-    loadCoachConfig();
     coachCheckLicense();
     setTimeout(generateQR, 300);
   } else {
@@ -514,19 +504,7 @@ function coachVerifyPin() {
 }
 
 function loadCoachConfig() {
-  const url = localStorage.getItem('drl_license_url') || DRL_CONFIG.licenseUrl;
-  const gymId = localStorage.getItem('drl_gym_id') || DRL_CONFIG.gymId;
-  document.getElementById('coachLicenseUrl').value = url;
-  document.getElementById('coachGymId').value = gymId;
-}
-
-function coachSaveConfig() {
-  const url = document.getElementById('coachLicenseUrl').value.trim();
-  const gymId = document.getElementById('coachGymId').value.trim().toUpperCase();
-  localStorage.setItem('drl_license_url', url);
-  localStorage.setItem('drl_gym_id', gymId);
-  showToast('CONFIG GUARDADA');
-  coachCheckLicense();
+  // Config de licencia — se conecta cuando se active DRL
 }
 
 // ===== LICENCIA DRL =====
