@@ -247,12 +247,7 @@
       <button class="btn btn-secondary" style="width:100%;justify-content:center" onclick="coachClose()">CANCELAR</button>
     </div>
     <div id="coachDashboard" style="display:none">
-      <div class="coach-status-box">
-        <div class="coach-status-label">ESTADO DE LICENCIA</div>
-        <div class="coach-status-val" id="coachStatusVal">—</div>
-        <div class="coach-status-detail" id="coachStatusDetail">Verificando...</div>
-      </div>
-      <button class="btn btn-secondary" style="width:100%;justify-content:center;margin-bottom:10px" onclick="coachCheckLicense()">VERIFICAR LICENCIA</button>
+
       <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:16px" onclick="coachClose()">CERRAR</button>
 
       <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
@@ -493,7 +488,6 @@ function coachVerifyPin() {
   if (pin === stored) {
     document.getElementById('coachPinSection').style.display = 'none';
     document.getElementById('coachDashboard').style.display = 'block';
-    coachCheckLicense();
     setTimeout(generateQR, 300);
   } else {
     document.getElementById('coachPinInput').style.borderColor = 'var(--red)';
@@ -933,7 +927,6 @@ function setAthleteName(name){
 init();
 initRM();
 checkOnboarding();
-checkLicenseOnStart();
 
 // Auto-update PWA
 if('serviceWorker' in navigator){
