@@ -250,6 +250,24 @@
 
       <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:16px" onclick="coachClose()">CERRAR</button>
 
+      <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px;margin-bottom:16px">
+        <div style="font-size:0.6rem;letter-spacing:3px;color:var(--text-dim);text-transform:uppercase;margin-bottom:12px;text-align:center">CAMBIAR PIN</div>
+        <div class="coach-field">
+          <label>PIN ACTUAL</label>
+          <input type="password" id="pinActual" placeholder="·····" maxlength="20">
+        </div>
+        <div class="coach-field">
+          <label>PIN NUEVO</label>
+          <input type="password" id="pinNuevo" placeholder="·····" maxlength="20">
+        </div>
+        <div class="coach-field">
+          <label>CONFIRMAR PIN NUEVO</label>
+          <input type="password" id="pinConfirm" placeholder="·····" maxlength="20"
+            onkeydown="if(event.key==='Enter') cambiarPin()">
+        </div>
+        <button onclick="cambiarPin()" style="background:none;border:1px solid var(--red);color:var(--red);font-family:var(--font-ui);font-size:0.65rem;font-weight:700;letter-spacing:2px;padding:10px;border-radius:8px;cursor:pointer;width:100%;text-transform:uppercase;margin-bottom:4px">GUARDAR NUEVO PIN</button>
+      </div>
+
       <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
         <div style="font-size:0.6rem;letter-spacing:3px;color:var(--text-dim);text-transform:uppercase;margin-bottom:12px;text-align:center">QR DE INSTALACIÓN</div>
         <div id="coachQrCode" style="display:flex;justify-content:center;margin-bottom:12px;background:white;padding:12px;border-radius:10px;"></div>
@@ -430,6 +448,37 @@ function coachOpen() {
 
 function coachClose() {
   document.getElementById('coachPanel').classList.remove('open');
+}
+
+function cambiarPin() {
+  const actual = document.getElementById('pinActual').value.trim();
+  const nuevo = document.getElementById('pinNuevo').value.trim();
+  const confirmar = document.getElementById('pinConfirm').value.trim();
+
+  if (!actual || !nuevo || !confirmar) { showToast('COMPLETÁ TODOS LOS CAMPOS'); return; }
+
+  const pinActual = localStorage.getItem('drl_coach_pin') || DRL_CONFIG.pin;
+  if (actual !== pinActual) {
+    document.getElementById('pinActual').style.borderColor = 'var(--red)';
+    showToast('PIN ACTUAL INCORRECTO');
+    setTimeout(() => document.getElementById('pinActual').style.borderColor = '', 1000);
+    return;
+  }
+
+  if (nuevo !== confirmar) {
+    document.getElementById('pinConfirm').style.borderColor = 'var(--red)';
+    showToast('LOS PINES NO COINCIDEN');
+    setTimeout(() => document.getElementById('pinConfirm').style.borderColor = '', 1000);
+    return;
+  }
+
+  if (nuevo.length < 4) { showToast('MÍNIMO 4 CARACTERES'); return; }
+
+  localStorage.setItem('drl_coach_pin', nuevo);
+  document.getElementById('pinActual').value = '';
+  document.getElementById('pinNuevo').value = '';
+  document.getElementById('pinConfirm').value = '';
+  showToast('PIN ACTUALIZADO ✓');
 }
 
 function generateQR() {
