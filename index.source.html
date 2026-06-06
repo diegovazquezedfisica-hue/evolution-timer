@@ -251,6 +251,24 @@
       <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:16px" onclick="coachClose()">CERRAR</button>
 
       <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px;margin-bottom:16px">
+        <div style="font-size:0.6rem;letter-spacing:3px;color:var(--text-dim);text-transform:uppercase;margin-bottom:12px;text-align:center">LICENCIA DRL</div>
+        <div class="coach-status-box" id="coachStatusBox" style="margin-bottom:12px">
+          <div class="coach-status-label">ESTADO</div>
+          <div class="coach-status-val" id="coachStatusVal">—</div>
+          <div class="coach-status-detail" id="coachStatusDetail">Sin verificar</div>
+        </div>
+        <div class="coach-field">
+          <label>URL DEL SCRIPT DRL</label>
+          <input type="url" id="coachLicenseUrl" placeholder="https://script.google.com/..." style="font-size:0.65rem;letter-spacing:0;" onchange="coachSaveConfig()">
+        </div>
+        <div class="coach-field">
+          <label>DOMINIO DEL GYM</label>
+          <input type="text" id="coachDominio" placeholder="evolution-timer.github.io" style="font-size:0.75rem;" onchange="coachSaveConfig()">
+        </div>
+        <button onclick="coachCheckLicense()" style="background:none;border:1px solid var(--border);color:var(--text-dim);font-family:var(--font-ui);font-size:0.65rem;font-weight:700;letter-spacing:2px;padding:10px;border-radius:8px;cursor:pointer;width:100%;text-transform:uppercase;margin-bottom:4px">VERIFICAR LICENCIA</button>
+      </div>
+
+      <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px;margin-bottom:16px">
         <div style="font-size:0.6rem;letter-spacing:3px;color:var(--text-dim);text-transform:uppercase;margin-bottom:12px;text-align:center">CAMBIAR PIN</div>
         <div class="coach-field">
           <label>PIN ACTUAL</label>
@@ -423,8 +441,9 @@
 // ===== CONFIG DRL =====
 const DRL_CONFIG = {
   pin: '1947',                    // PIN del coach — cambiarlo antes de entregar
-  licenseUrl: '',                 // URL del Apps Script de licencias DRL
-  gymId: '',                      // ID del gym asignado por DRL
+  licenseUrl: '',                 // URL del Apps Script DRL
+  dominio: '',                    // Dominio del gym tal como está en la Sheet Control
+  token: 'DRL194749',             // Token de seguridad DRL
   graceDays: 5                    // días de gracia antes de bloquear
 };
 
@@ -547,20 +566,30 @@ function coachVerifyPin() {
 }
 
 function loadCoachConfig() {
-  // Config de licencia — se conecta cuando se active DRL
+  const url = localStorage.getItem('drl_license_url') || '';
+  const dominio = localStorage.getItem('drl_dominio') || '';
+  if (document.getElementById('coachLicenseUrl')) document.getElementById('coachLicenseUrl').value = url;
+  if (document.getElementById('coachDominio')) document.getElementById('coachDominio').value = dominio;
+}
+
+function coachSaveConfig() {
+  const url = document.getElementById('coachLicenseUrl').value.trim();
+  const dominio = document.getElementById('coachDominio').value.trim().toLowerCase();
+  localStorage.setItem('drl_license_url', url);
+  localStorage.setItem('drl_dominio', dominio);
 }
 
 // ===== LICENCIA DRL =====
 function coachCheckLicense() {
-  const url = localStorage.getItem('drl_license_url') || DRL_CONFIG.licenseUrl;
-  const gymId = localStorage.getItem('drl_gym_id') || DRL_CONFIG.gymId;
+  const url = localStorage.getItem('drl_license_url') || '';
+  const dominio = localStorage.getItem('drl_dominio') || '';
   const statusVal = document.getElementById('coachStatusVal');
   const statusDetail = document.getElementById('coachStatusDetail');
 
-  if (!url || !gymId) {
+  if (!url || !dominio) {
     statusVal.textContent = 'SIN CONFIG';
     statusVal.className = 'coach-status-val warning';
-    statusDetail.textContent = 'Configurá la URL y el ID del gym';
+    statusDetail.textContent = 'Completá la URL y el dominio';
     return;
   }
 
@@ -568,66 +597,88 @@ function coachCheckLicense() {
   statusVal.className = 'coach-status-val';
   statusDetail.textContent = '...';
 
-  fetch(`${url}?gymId=${gymId}&action=check`, { mode: 'cors' })
-    .then(r => r.json())
-    .then(data => {
-      localStorage.setItem('drl_license_cache', JSON.stringify({ ...data, cached: Date.now() }));
-      applyLicenseStatus(data, statusVal, statusDetail);
-    })
-    .catch(() => {
-      // Sin internet — usar caché
-      const cached = localStorage.getItem('drl_license_cache');
-      if (cached) {
-        const data = JSON.parse(cached);
-        statusDetail.textContent = 'Sin conexión — usando datos anteriores';
-        applyLicenseStatus(data, statusVal, statusDetail);
-      } else {
-        statusVal.textContent = 'SIN CONEXIÓN';
-        statusVal.className = 'coach-status-val warning';
-        statusDetail.textContent = 'No se pudo verificar la licencia';
-      }
-    });
+  const callbackName = 'drlCb_' + Date.now();
+  const script = document.createElement('script');
+  script.src = `${url}?token=${DRL_CONFIG.token}&dominio=${encodeURIComponent(dominio)}&callback=${callbackName}`;
+
+  window[callbackName] = function(data) {
+    document.head.removeChild(script);
+    delete window[callbackName];
+    localStorage.setItem('drl_license_cache', JSON.stringify({ ...data, cached: Date.now() }));
+    applyLicenseStatus(data, statusVal, statusDetail);
+  };
+
+  script.onerror = function() {
+    document.head.removeChild(script);
+    delete window[callbackName];
+    const cached = localStorage.getItem('drl_license_cache');
+    if (cached) {
+      statusDetail.textContent = 'Sin conexión — datos anteriores';
+      applyLicenseStatus(JSON.parse(cached), statusVal, statusDetail);
+    } else {
+      statusVal.textContent = 'SIN CONEXIÓN';
+      statusVal.className = 'coach-status-val warning';
+      statusDetail.textContent = 'No se pudo verificar';
+    }
+  };
+
+  document.head.appendChild(script);
 }
 
 function applyLicenseStatus(data, statusEl, detailEl) {
-  if (!data.active) {
-    statusEl.textContent = 'VENCIDA';
+  if (!data.ok || !data.activo) {
+    statusEl.textContent = data.estado || 'VENCIDA';
     statusEl.className = 'coach-status-val expired';
-    detailEl.textContent = 'Contactá a DRL para renovar';
+    detailEl.textContent = 'Contactá a DRL para renovar · ' + (data.vencimiento || '');
     showLicenseBlock();
     return;
   }
-  const days = data.daysLeft || 999;
-  if (days <= DRL_CONFIG.graceDays) {
-    statusEl.textContent = `${days} DÍAS`;
+  // Calcular días restantes
+  let daysLeft = 999;
+  if (data.vencimiento) {
+    const venc = new Date(data.vencimiento);
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    daysLeft = Math.ceil((venc - hoy) / 86400000);
+  }
+  if (daysLeft <= DRL_CONFIG.graceDays) {
+    statusEl.textContent = daysLeft + ' DÍAS';
     statusEl.className = 'coach-status-val warning';
-    detailEl.textContent = `Licencia vence pronto — renovar con DRL`;
+    detailEl.textContent = 'Licencia por vencer — contactá a DRL';
   } else {
     statusEl.textContent = 'ACTIVA';
     statusEl.className = 'coach-status-val ok';
-    detailEl.textContent = `Vence: ${data.expiry || '—'} · ID: ${data.gymId || '—'}`;
+    detailEl.textContent = 'Vence: ' + (data.vencimiento || '—');
   }
 }
 
 function checkLicenseOnStart() {
-  const url = localStorage.getItem('drl_license_url') || DRL_CONFIG.licenseUrl;
-  const gymId = localStorage.getItem('drl_gym_id') || DRL_CONFIG.gymId;
-  if (!url || !gymId) return; // sin config = modo libre
+  const url = localStorage.getItem('drl_license_url') || '';
+  const dominio = localStorage.getItem('drl_dominio') || '';
+  if (!url || !dominio) return; // sin config = modo libre
 
-  fetch(`${url}?gymId=${gymId}&action=check`, { mode: 'cors' })
-    .then(r => r.json())
-    .then(data => {
-      localStorage.setItem('drl_license_cache', JSON.stringify({ ...data, cached: Date.now() }));
-      if (!data.active) showLicenseBlock();
-    })
-    .catch(() => {
-      const cached = localStorage.getItem('drl_license_cache');
-      if (cached) {
-        const data = JSON.parse(cached);
-        const hoursSinceCached = (Date.now() - data.cached) / 3600000;
-        if (!data.active && hoursSinceCached < 72) showLicenseBlock();
-      }
-    });
+  const callbackName = 'drlStart_' + Date.now();
+  const script = document.createElement('script');
+  script.src = `${url}?token=${DRL_CONFIG.token}&dominio=${encodeURIComponent(dominio)}&callback=${callbackName}`;
+
+  window[callbackName] = function(data) {
+    document.head.removeChild(script);
+    delete window[callbackName];
+    localStorage.setItem('drl_license_cache', JSON.stringify({ ...data, cached: Date.now() }));
+    if (!data.activo) showLicenseBlock();
+  };
+
+  script.onerror = function() {
+    document.head.removeChild(script);
+    delete window[callbackName];
+    const cached = localStorage.getItem('drl_license_cache');
+    if (cached) {
+      const data = JSON.parse(cached);
+      const horas = (Date.now() - data.cached) / 3600000;
+      if (!data.activo && horas < 72) showLicenseBlock();
+    }
+  };
+
+  document.head.appendChild(script);
 }
 
 function showLicenseBlock() {
@@ -974,6 +1025,7 @@ function setAthleteName(name){
 
 // ===== BOOT =====
 init();
+checkLicenseOnStart();
 initRM();
 checkOnboarding();
 
