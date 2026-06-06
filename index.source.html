@@ -228,7 +228,7 @@
 <div id="licenseBlock">
   <img src="icon-512.png" style="width:80px;height:80px;border-radius:16px;margin-bottom:24px;opacity:0.5;">
   <div style="font-family:var(--font-display);font-size:2rem;letter-spacing:4px;color:var(--red);margin-bottom:8px">SERVICIO SUSPENDIDO</div>
-  <div style="font-size:0.7rem;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:32px;line-height:2">Contactá a tu entrenador<br>para renovar el acceso</div>
+  <div style="font-size:0.7rem;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:32px;line-height:2">Contactá a tu proveedor<br>para renovar el acceso</div>
   <div style="font-size:0.55rem;letter-spacing:3px;color:var(--text-muted);text-transform:uppercase">DRL Sistema de Gestión</div>
 </div>
 
@@ -256,14 +256,6 @@
           <div class="coach-status-label">ESTADO</div>
           <div class="coach-status-val" id="coachStatusVal">—</div>
           <div class="coach-status-detail" id="coachStatusDetail">Sin verificar</div>
-        </div>
-        <div class="coach-field">
-          <label>URL DEL SCRIPT DRL</label>
-          <input type="url" id="coachLicenseUrl" placeholder="https://script.google.com/..." style="font-size:0.65rem;letter-spacing:0;" onchange="coachSaveConfig()">
-        </div>
-        <div class="coach-field">
-          <label>DOMINIO DEL GYM</label>
-          <input type="text" id="coachDominio" placeholder="evolution-timer.github.io" style="font-size:0.75rem;" onchange="coachSaveConfig()">
         </div>
         <button onclick="coachCheckLicense()" style="background:none;border:1px solid var(--border);color:var(--text-dim);font-family:var(--font-ui);font-size:0.65rem;font-weight:700;letter-spacing:2px;padding:10px;border-radius:8px;cursor:pointer;width:100%;text-transform:uppercase;margin-bottom:4px">VERIFICAR LICENCIA</button>
       </div>
@@ -440,11 +432,11 @@
 <script>
 // ===== CONFIG DRL =====
 const DRL_CONFIG = {
-  pin: '1947',                    // PIN del coach — cambiarlo antes de entregar
-  licenseUrl: '',                 // URL del Apps Script DRL
-  dominio: '',                    // Dominio del gym tal como está en la Sheet Control
-  token: 'DRL194749',             // Token de seguridad DRL
-  graceDays: 5                    // días de gracia antes de bloquear
+  pin: '1947',
+  licenseUrl: 'https://script.google.com/macros/s/AKfycbwlM0gexbjIQTshIgWYG2Gy2t49P-M3WrOlpv6HJ7tuDj4XMskvCFfAuz8Iz86Ri9M3Tg/exec',
+  dominio: 'diegovazquezedfisica-hue.github.io/evolution-timer/index.html',
+  token: 'DRL194749',
+  graceDays: 5
 };
 
 // ===== TOQUE SECRETO EN LOGO =====
@@ -565,24 +557,12 @@ function coachVerifyPin() {
   }
 }
 
-function loadCoachConfig() {
-  const url = localStorage.getItem('drl_license_url') || '';
-  const dominio = localStorage.getItem('drl_dominio') || '';
-  if (document.getElementById('coachLicenseUrl')) document.getElementById('coachLicenseUrl').value = url;
-  if (document.getElementById('coachDominio')) document.getElementById('coachDominio').value = dominio;
-}
-
-function coachSaveConfig() {
-  const url = document.getElementById('coachLicenseUrl').value.trim();
-  const dominio = document.getElementById('coachDominio').value.trim().toLowerCase();
-  localStorage.setItem('drl_license_url', url);
-  localStorage.setItem('drl_dominio', dominio);
-}
+function loadCoachConfig() { /* config hardcodeada en DRL_CONFIG */ }
 
 // ===== LICENCIA DRL =====
 function coachCheckLicense() {
-  const url = localStorage.getItem('drl_license_url') || '';
-  const dominio = localStorage.getItem('drl_dominio') || '';
+  const url = DRL_CONFIG.licenseUrl;
+  const dominio = DRL_CONFIG.dominio;
   const statusVal = document.getElementById('coachStatusVal');
   const statusDetail = document.getElementById('coachStatusDetail');
 
@@ -629,7 +609,7 @@ function applyLicenseStatus(data, statusEl, detailEl) {
   if (!data.ok || !data.activo) {
     statusEl.textContent = data.estado || 'VENCIDA';
     statusEl.className = 'coach-status-val expired';
-    detailEl.textContent = 'Contactá a DRL para renovar · ' + (data.vencimiento || '');
+    detailEl.textContent = 'Contactá a tu proveedor DRL · ' + (data.vencimiento || '');
     showLicenseBlock();
     return;
   }
@@ -652,9 +632,9 @@ function applyLicenseStatus(data, statusEl, detailEl) {
 }
 
 function checkLicenseOnStart() {
-  const url = localStorage.getItem('drl_license_url') || '';
-  const dominio = localStorage.getItem('drl_dominio') || '';
-  if (!url || !dominio) return; // sin config = modo libre
+  const url = DRL_CONFIG.licenseUrl;
+  const dominio = DRL_CONFIG.dominio;
+  if (!url || !dominio) return;
 
   const callbackName = 'drlStart_' + Date.now();
   const script = document.createElement('script');
