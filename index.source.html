@@ -433,7 +433,7 @@
 // ===== CONFIG DRL =====
 const DRL_CONFIG = {
   pin: '1947',
-  licenseUrl: 'https://script.google.com/macros/s/AKfycbwlM0gexbjIQTshIgWYG2Gy2t49P-M3WrOlpv6HJ7tuDj4XMskvCFfAuz8Iz86Ri9M3Tg/exec',
+  licenseUrl: 'https://drl-license.diegovazquez-ed-fisica.workers.dev',  // <-- reemplazar con tu URL del Worker
   dominio: 'diegovazquezedfisica-hue.github.io/evolution-timer/index.html',
   token: 'DRL194749',
   graceDays: 5
@@ -577,32 +577,23 @@ function coachCheckLicense() {
   statusVal.className = 'coach-status-val';
   statusDetail.textContent = '...';
 
-  const callbackName = 'drlCb_' + Date.now();
-  const script = document.createElement('script');
-  script.src = `${url}?token=${DRL_CONFIG.token}&dominio=${encodeURIComponent(dominio)}&callback=${callbackName}`;
-
-  window[callbackName] = function(data) {
-    document.head.removeChild(script);
-    delete window[callbackName];
-    localStorage.setItem('drl_license_cache', JSON.stringify({ ...data, cached: Date.now() }));
-    applyLicenseStatus(data, statusVal, statusDetail);
-  };
-
-  script.onerror = function() {
-    document.head.removeChild(script);
-    delete window[callbackName];
-    const cached = localStorage.getItem('drl_license_cache');
-    if (cached) {
-      statusDetail.textContent = 'Sin conexión — datos anteriores';
-      applyLicenseStatus(JSON.parse(cached), statusVal, statusDetail);
-    } else {
-      statusVal.textContent = 'SIN CONEXIÓN';
-      statusVal.className = 'coach-status-val warning';
-      statusDetail.textContent = 'No se pudo verificar';
-    }
-  };
-
-  document.head.appendChild(script);
+  fetch(`${url}?dominio=${encodeURIComponent(dominio)}`)
+    .then(r => r.json())
+    .then(data => {
+      localStorage.setItem('drl_license_cache', JSON.stringify({ ...data, cached: Date.now() }));
+      applyLicenseStatus(data, statusVal, statusDetail);
+    })
+    .catch(() => {
+      const cached = localStorage.getItem('drl_license_cache');
+      if (cached) {
+        statusDetail.textContent = 'Sin conexión — datos anteriores';
+        applyLicenseStatus(JSON.parse(cached), statusVal, statusDetail);
+      } else {
+        statusVal.textContent = 'SIN CONEXIÓN';
+        statusVal.className = 'coach-status-val warning';
+        statusDetail.textContent = 'No se pudo verificar';
+      }
+    });
 }
 
 function applyLicenseStatus(data, statusEl, detailEl) {
@@ -636,29 +627,20 @@ function checkLicenseOnStart() {
   const dominio = DRL_CONFIG.dominio;
   if (!url || !dominio) return;
 
-  const callbackName = 'drlStart_' + Date.now();
-  const script = document.createElement('script');
-  script.src = `${url}?token=${DRL_CONFIG.token}&dominio=${encodeURIComponent(dominio)}&callback=${callbackName}`;
-
-  window[callbackName] = function(data) {
-    document.head.removeChild(script);
-    delete window[callbackName];
-    localStorage.setItem('drl_license_cache', JSON.stringify({ ...data, cached: Date.now() }));
-    if (!data.activo) showLicenseBlock();
-  };
-
-  script.onerror = function() {
-    document.head.removeChild(script);
-    delete window[callbackName];
-    const cached = localStorage.getItem('drl_license_cache');
-    if (cached) {
-      const data = JSON.parse(cached);
-      const horas = (Date.now() - data.cached) / 3600000;
-      if (!data.activo && horas < 72) showLicenseBlock();
-    }
-  };
-
-  document.head.appendChild(script);
+  fetch(`${url}?dominio=${encodeURIComponent(dominio)}`)
+    .then(r => r.json())
+    .then(data => {
+      localStorage.setItem('drl_license_cache', JSON.stringify({ ...data, cached: Date.now() }));
+      if (!data.activo) showLicenseBlock();
+    })
+    .catch(() => {
+      const cached = localStorage.getItem('drl_license_cache');
+      if (cached) {
+        const data = JSON.parse(cached);
+        const horas = (Date.now() - data.cached) / 3600000;
+        if (!data.activo && horas < 72) showLicenseBlock();
+      }
+    });
 }
 
 function showLicenseBlock() {
