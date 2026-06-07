@@ -151,7 +151,7 @@
     /* COACH PANEL */
     #coachPanel{display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.95);align-items:center;justify-content:center;padding:24px;}
     #coachPanel.open{display:flex !important;}
-    .coach-box{background:var(--surface);border:1px solid var(--border);border-top:2px solid var(--red);border-radius:16px;padding:24px;width:100%;max-width:400px;}
+    .coach-box{background:var(--surface);border:1px solid var(--border);border-top:2px solid var(--red);border-radius:16px;padding:24px;width:100%;max-width:400px;max-height:90vh;overflow-y:auto;}
     .coach-title{font-family:var(--font-display);font-size:1.8rem;letter-spacing:4px;margin-bottom:4px;}
     .coach-sub{font-size:0.6rem;letter-spacing:3px;color:var(--red);text-transform:uppercase;margin-bottom:20px;}
     .coach-field{margin-bottom:16px;}
@@ -278,11 +278,11 @@
         <button onclick="cambiarPin()" style="background:none;border:1px solid var(--red);color:var(--red);font-family:var(--font-ui);font-size:0.65rem;font-weight:700;letter-spacing:2px;padding:10px;border-radius:8px;cursor:pointer;width:100%;text-transform:uppercase;margin-bottom:4px">GUARDAR NUEVO PIN</button>
       </div>
 
-      <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
+      <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px;padding-bottom:32px">
         <div style="font-size:0.6rem;letter-spacing:3px;color:var(--text-dim);text-transform:uppercase;margin-bottom:12px;text-align:center">QR DE INSTALACIÓN</div>
-        <div id="coachQrCode" style="display:flex;justify-content:center;margin-bottom:12px;background:white;padding:12px;border-radius:10px;"></div>
+        <div id="coachQrCode" style="display:flex;justify-content:center;margin-bottom:12px;background:white;padding:16px;border-radius:10px;"></div>
         <div style="font-size:0.6rem;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;text-align:center;margin-bottom:12px">Mostrá este QR a tus alumnos<br>para que instalen la app</div>
-        <button onclick="downloadQR()" style="background:none;border:1px solid var(--red);color:var(--red);font-family:var(--font-ui);font-size:0.65rem;font-weight:700;letter-spacing:2px;padding:10px;border-radius:8px;cursor:pointer;width:100%;text-transform:uppercase;margin-bottom:12px">DESCARGAR QR</button>
+        <button onclick="downloadQR()" style="background:none;border:1px solid var(--red);color:var(--red);font-family:var(--font-ui);font-size:0.65rem;font-weight:700;letter-spacing:2px;padding:10px;border-radius:8px;cursor:pointer;width:100%;text-transform:uppercase;margin-bottom:32px">DESCARGAR QR</button>
       </div>
 
       <div style="font-size:0.5rem;letter-spacing:2px;color:var(--text-muted);text-align:center;margin-top:8px;text-transform:uppercase">DRL Sistema de Gestión · drl-gestion.github.io</div>
@@ -617,14 +617,23 @@ function applyLicenseStatus(data, statusEl, detailEl) {
     const hoy = new Date(); hoy.setHours(0,0,0,0);
     daysLeft = Math.ceil((venc - hoy) / 86400000);
   }
+  // Formatear fecha
+  let fechaLinda = '—';
+  if (data.vencimiento) {
+    try {
+      const d = new Date(data.vencimiento);
+      fechaLinda = d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    } catch(e) { fechaLinda = data.vencimiento; }
+  }
+
   if (daysLeft <= DRL_CONFIG.graceDays) {
     statusEl.textContent = daysLeft + ' DÍAS';
     statusEl.className = 'coach-status-val warning';
-    detailEl.textContent = 'Licencia por vencer — contactá a DRL';
+    detailEl.textContent = 'Vence: ' + fechaLinda + ' — contactá a DRL';
   } else {
     statusEl.textContent = 'ACTIVA';
     statusEl.className = 'coach-status-val ok';
-    detailEl.textContent = 'Vence: ' + (data.vencimiento || '—');
+    detailEl.textContent = 'Vence: ' + fechaLinda;
   }
 }
 
